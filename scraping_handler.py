@@ -27,11 +27,7 @@ class ScrapingThread(QThread):
         """执行抓取流程"""
         try:
             from contract_scraper import scrape_single_contract
-            from data_handler import clear_contract_data
 
-            # 清空之前的抓取数据
-            clear_contract_data()
-            self.log_signal.emit("已清空之前的抓取数据")
 
             self.log_signal.emit("正在启动浏览器...")
 

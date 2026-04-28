@@ -1,32 +1,51 @@
+import json
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
+from pathlib import Path
+import tempfile
+
+# 数据文件存储路径（使用系统临时目录）
+DATA_DIR = Path(tempfile.gettempdir()) / "contract_scraper"
+DATA_FILE = DATA_DIR / "contract_data.json"
 
 
-# 全局数据存储（内存中）
-_global_contract_data = []
+def _ensure_data_dir():
+    """确保数据目录存在"""
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def add_contract_data(contract_data):
-    """添加合同数据到内存中"""
-    global _global_contract_data
-    _global_contract_data.append(contract_data)
+    """追加合同数据到文件中"""
+    _ensure_data_dir()
+
+    # 读取现有数据
+    existing_data = []
+    if DATA_FILE.exists():
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            existing_data = json.load(f)
+
+    # 追加新数据
+    existing_data.append(contract_data)
+
+    # 写回文件
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+        json.dump(existing_data, f, ensure_ascii=False, indent=2)
 
 
-def clear_contract_data():
-    """清空内存中的合同数据"""
-    global _global_contract_data
-    _global_contract_data = []
 
 
 def get_contract_data():
-    """获取内存中的所有合同数据"""
-    global _global_contract_data
-    return _global_contract_data
+    """从文件中获取所有合同数据"""
+    if not DATA_FILE.exists():
+        return []
+
+    with open(DATA_FILE, 'r', encoding='utf-8') as f:
+        return json.load(f)
 
 
 def export_to_excel(file_path):
-    """导出内存中的数据到指定路径的Excel文件"""
-    global _global_contract_data
+    """导出文件中的数据到指定路径的Excel文件"""
+    contract_data_list = get_contract_data()
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -66,7 +85,7 @@ def export_to_excel(file_path):
     global_number = 1
 
     # 遍历所有合同数据
-    for contract_data in _global_contract_data:
+    for contract_data in contract_data_list:
         basic_info = {
             '经办时间': contract_data.get('经办时间', ''),
             '经办机构': contract_data.get('经办机构', ''),
@@ -119,4 +138,4 @@ def export_to_excel(file_path):
             global_number += 1
 
     wb.save(file_path)
-    return len(_global_contract_data)
+    return len(contract_data_list)

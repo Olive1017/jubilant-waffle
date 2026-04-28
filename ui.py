@@ -85,13 +85,13 @@ class MainWindow(QMainWindow):
         self.start_btn.setFixedHeight(40)
         self.start_btn.setStyleSheet("""
             QPushButton {
-                background-color: #4CAF50;
+                background-color: #52c41a;
             }
             QPushButton:hover {
-                background-color: #66BB6A;
+                background-color: #73d13d;
             }
             QPushButton:pressed {
-                background-color: #43A047;
+                background-color: #389e0d;
             }
         """)
         self.start_btn.clicked.connect(self.start_scraping)
@@ -102,13 +102,13 @@ class MainWindow(QMainWindow):
         self.stop_btn.setEnabled(False)
         self.stop_btn.setStyleSheet("""
             QPushButton {
-                background-color: #FF9800;
+                background-color: #ff4d4f;
             }
             QPushButton:hover {
-                background-color: #FFA726;
+                background-color: #ff7875;
             }
             QPushButton:pressed {
-                background-color: #F57C00;
+                background-color: #cf1322;
             }
         """)
         self.stop_btn.clicked.connect(self.stop_scraping)
@@ -119,13 +119,13 @@ class MainWindow(QMainWindow):
         self.continue_btn.setEnabled(False)
         self.continue_btn.setStyleSheet("""
             QPushButton {
-                background-color: #2E7D32;
+                background-color: #1890ff;
             }
             QPushButton:hover {
-                background-color: #66BB6A;
+                background-color: #40a9ff;
             }
             QPushButton:pressed {
-                background-color: #43A047;
+                background-color: #096dd9;
             }
         """)
         self.continue_btn.clicked.connect(self.continue_scraping)
@@ -142,6 +142,17 @@ class MainWindow(QMainWindow):
 
         self.export_btn = QPushButton("导出Excel")
         self.export_btn.setFixedHeight(40)
+        self.export_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #1890ff;
+            }
+            QPushButton:hover {
+                background-color: #40a9ff;
+            }
+            QPushButton:pressed {
+                background-color: #096dd9;
+            }
+        """)
         self.export_btn.clicked.connect(self.export_excel)
         data_layout.addWidget(self.export_btn)
 
@@ -155,7 +166,17 @@ class MainWindow(QMainWindow):
         # 添加退出按钮
         exit_btn = QPushButton("退出")
         exit_btn.setFixedHeight(35)
-        exit_btn.setStyleSheet("background-color: red;")
+        exit_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #ff4d4f;
+            }
+            QPushButton:hover {
+                background-color: #ff7875;
+            }
+            QPushButton:pressed {
+                background-color: #cf1322;
+            }
+        """)
         exit_btn.clicked.connect(self.close)
         control_layout.addWidget(exit_btn)
 
