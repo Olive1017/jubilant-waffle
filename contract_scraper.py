@@ -2,6 +2,39 @@ import time
 from datetime import datetime
 
 
+def close_popups(page):
+    """关闭所有系统弹窗(如502错误等)"""
+    try:
+        # 尝试多种方式定位关闭按钮
+        popup = page.locator('.el-overlay-message-box')
+        if popup.count() > 0:
+            print("检测到系统弹窗，正在关闭...")
+            # 尝试方式1
+            close_btn = page.locator('.el-message-box__headerbtn')
+            if close_btn.count() > 0:
+                close_btn.click()
+                time.sleep(0.5)
+                print("弹窗已关闭")
+                return True
+            # 尝试方式2
+            close_btn = page.locator('button[aria-label="关闭此对话框"]')
+            if close_btn.count() > 0:
+                close_btn.click()
+                time.sleep(0.5)
+                print("弹窗已关闭")
+                return True
+            # 尝试方式3
+            close_icon = page.locator('.el-message-box__close')
+            if close_icon.count() > 0:
+                close_icon.click()
+                time.sleep(0.5)
+                print("弹窗已关闭")
+                return True
+    except Exception as e:
+        print(f"关闭弹窗时出错: {e}")
+    return False
+
+
 def scrape_approval_table(page):
     """抓取审批意见表格信息"""
     try:
@@ -51,6 +84,7 @@ def scrape_single_contract(page):
 
         # 点击合同起草
         print("点击合同起草...")
+        close_popups(page)  # 关闭可能存在的弹窗
         page.get_by_text("合同起草").click()
 
         # 抓取基本信息
@@ -70,10 +104,15 @@ def scrape_single_contract(page):
         # 点击合同审批并抓取表格信息
         print("\n点击合同审批...")
         #page.get_by_text("合同审批").click()
+        close_popups(page)  # 关闭可能存在的弹窗
         page.locator('.tab-item span:has-text("合同审批")').click()
 
-        print("等待页面加载...")
-        page.wait_for_load_state('networkidle')
+
+        try:
+            page.locator('.lui-table-tbody tr').first.locator('td').get_by_text('1').wait_for(timeout=15000)
+        except Exception as e:
+            print(f"等待审批表格超时: {e}")
+            # 可以尝试刷新页面或重试
 
         # 抓取审批表格
         approval_data = scrape_approval_table(page)
@@ -94,7 +133,6 @@ def scrape_single_contract(page):
         add_contract_data(contract_data)
 
         print(f"合同 {contract_code} 抓取完成！")
-        print(f"数据已保存到内存")
 
         return approval_data
 

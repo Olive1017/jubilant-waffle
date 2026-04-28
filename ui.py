@@ -265,6 +265,7 @@ class MainWindow(QMainWindow):
         if self.scraping_thread:
             self.scraping_thread.should_continue = True
             self.continue_btn.setEnabled(False)
+            self.showMinimized()
 
     def on_scraping_finished(self, success, message):
         """抓取完成回调"""

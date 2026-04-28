@@ -6,6 +6,8 @@ from datetime import datetime
 from PySide6.QtCore import QThread, Signal
 from playwright.sync_api import sync_playwright
 
+from contract_scraper import close_popups
+
 
 class ScrapingThread(QThread):
     """自动化抓取线程 - 处理合同数据抓取"""
@@ -103,7 +105,10 @@ class ScrapingThread(QThread):
                         return
                     time.sleep(0.1)
 
+
                 self.log_signal.emit("操作确认完成，正在保存登录状态...")
+                from data_handler import clear_contract_data
+                clear_contract_data()
 
                 # 保存登录状态
                 context.storage_state(path=str(auth_file))
@@ -115,7 +120,7 @@ class ScrapingThread(QThread):
                 # 自动设置每页显示20条
                 try:
                     page.locator('.el-select__wrapper:has-text("10条/页")').click()
-                    page.get_by_text("5条/页").click()
+                    page.get_by_text("50条/页").click()
                     time.sleep(5)
                 except Exception as e:
                     self.log_signal.emit(f"设置每页显示数量失败（不影响抓取）: {str(e)}")
@@ -158,6 +163,7 @@ class ScrapingThread(QThread):
                         self.progress_signal.emit(total_contracts, 0)
 
                         # 关闭合同详情标签页
+                        close_popups(page)
                         tab_with_close = page.locator('.tab-item').filter(has_text="合同详情").locator('.el-icon svg')
                         tab_with_close.click()
 

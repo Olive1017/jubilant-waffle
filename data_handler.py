@@ -32,6 +32,12 @@ def add_contract_data(contract_data):
         json.dump(existing_data, f, ensure_ascii=False, indent=2)
 
 
+def clear_contract_data():
+    """清空所有合同数据"""
+    _ensure_data_dir()
+    if DATA_FILE.exists():
+        DATA_FILE.unlink()
+        print("旧数据已清空")
 
 
 def get_contract_data():
