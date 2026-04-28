@@ -43,7 +43,7 @@ def scrape_approval_table(page):
         return []
 
 
-def scrape_single_contract(page, global_number):
+def scrape_single_contract(page):
     """抓取单个合同的所有信息"""
     try:
         # 等待页面加载
@@ -89,14 +89,16 @@ def scrape_single_contract(page, global_number):
             '审批记录': approval_data
         }
 
-        # 保存到Excel（传入全局序号）
-        from data_handler import save_to_excel
-        global_number = save_to_excel(contract_data, 'contract_data.xlsx', global_number)
+        # 保存到内存
+        from data_handler import add_contract_data
+        add_contract_data(contract_data)
 
         print(f"合同 {contract_code} 抓取完成！")
+        print(f"数据已保存到内存")
 
-        return global_number, approval_data
+        return approval_data
 
     except Exception as e:
         print(f"抓取合同信息时出错: {e}")
-        return global_number, []
+        return []
+
