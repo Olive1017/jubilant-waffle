@@ -117,11 +117,19 @@ class ScrapingThread(QThread):
                 print("开始抓取流程...")
                 page.wait_for_load_state("networkidle")
 
+
                 # 自动设置每页显示50条
                 try:
                     page.locator('.el-select__wrapper:has-text("10条/页")').click()
                     page.get_by_text("50条/页").click()
-                    time.sleep(10)
+                    time.sleep(2)
+
+                    # 等待第11个序号出现，代表表格数据加载成功
+                    try:
+                        page.locator('td.el-table-fixed-column--left div').get_by_text('11').wait_for(timeout=15000)
+                        print("50条/页设置成功，表格已加载")
+                    except:
+                        print("等待表格加载超时，但继续执行...")
                 except Exception as e:
                     print(f"设置每页显示数量失败（不影响抓取）: {str(e)}")
 

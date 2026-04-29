@@ -41,10 +41,10 @@ def scrape_approval_table(page):
         print("等待审批表格加载...")
         # 尝试等待第一种格式的容器
         try:
-            page.wait_for_selector('.div-summary-of-opinions-main', timeout=15000)
+            page.locator('.lui-table-tbody tr').first.locator('td').get_by_text('1').wait_for(timeout=10000)
             time.sleep(0.5)
         except:
-            print("未找到第一种格式容器，可能是第二种格式，继续尝试...")
+            print("等待表格超时，尝试直接抓取...")
 
         print("开始抓取审批表格数据...")
         rows = page.locator('.lui-table-tbody tr')
