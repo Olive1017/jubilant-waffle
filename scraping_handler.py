@@ -117,11 +117,11 @@ class ScrapingThread(QThread):
                 self.log_signal.emit("开始抓取流程...")
                 page.wait_for_load_state("networkidle")
 
-                # 自动设置每页显示20条
+                # 自动设置每页显示50条
                 try:
                     page.locator('.el-select__wrapper:has-text("10条/页")').click()
                     page.get_by_text("50条/页").click()
-                    time.sleep(5)
+                    time.sleep(10)
                 except Exception as e:
                     self.log_signal.emit(f"设置每页显示数量失败（不影响抓取）: {str(e)}")
 
@@ -179,16 +179,35 @@ class ScrapingThread(QThread):
                     if not self.is_running:
                         break
 
-                    # 当前页面的所有合同抓取完成，尝试翻页
-                    self.log_signal.emit(f"\n第 {page_number} 页的 {contract_count} 个合同已全部抓取完成")
+                    # 当前页面的所有合同抓取完成，判断是否需要翻页
+                    self.log_signal.emit(f"\\n第 {page_number} 页的 {contract_count} 个合同已全部抓取完成")
 
-                    # 点击下一页
-                    page.locator('.btn-next').click()
-                    self.log_signal.emit("翻页成功")
-                    time.sleep(8)
-                    page.wait_for_load_state('networkidle')
+                    if contract_count < 50:
+                        self.log_signal.emit(f"当前页面只有 {contract_count} 个合同，已到最后一页")
+                        break
+                    else:
+                        # 尝试翻页
+                        self.log_signal.emit(f"当前页面有 {contract_count} 个合同，尝试翻页...")
+                        try:
+                            page.locator('.btn-next').click()
+                            time.sleep(8)
+                            page.wait_for_load_state('networkidle')
 
-                    page_number += 1
+                            # 检查翻页是否成功
+                            new_contract_links = page.locator("td.el-table_2_column_6.el-table__cell a.dao-link")
+                            new_count = new_contract_links.count()
+
+                            if new_count == 0:
+                                self.log_signal.emit("翻页后没有合同，已到最后一页")
+                                break
+                            else:
+                                self.log_signal.emit(f"翻页成功，第 {page_number + 1} 页有 {new_count} 个合同")
+                                page_number += 1
+
+                        except Exception as e:
+                            self.log_signal.emit(f"翻页失败: {e}，已到最后一页")
+                            break
+
 
                 self.log_signal.emit(f"\n===== 抓取完成 =====")
                 self.log_signal.emit(f"总共抓取了 {page_number} 页")

@@ -39,8 +39,12 @@ def scrape_approval_table(page):
     """抓取审批意见表格信息"""
     try:
         print("等待审批表格加载...")
-        page.wait_for_selector('.div-summary-of-opinions-main', timeout=30000)
-        time.sleep(3)
+        # 尝试等待第一种格式的容器
+        try:
+            page.wait_for_selector('.div-summary-of-opinions-main', timeout=15000)
+            time.sleep(1)
+        except:
+            print("未找到第一种格式容器，可能是第二种格式，继续尝试...")
 
         print("开始抓取审批表格数据...")
         rows = page.locator('.lui-table-tbody tr')
@@ -48,8 +52,8 @@ def scrape_approval_table(page):
         print(f"找到 {row_count} 行审批记录")
 
         if row_count == 0:
-            print("警告：没有找到任何审批记录！")
-            return []
+            print("第一种格式未找到，尝试第二种格式...")
+            return scrape_approval_table_alternative(page)
 
         approval_data = []
 
@@ -73,6 +77,51 @@ def scrape_approval_table(page):
 
     except Exception as e:
         print(f"抓取审批表格失败: {e}")
+        return []
+
+
+def scrape_approval_table_alternative(page):
+    """备用方案：抓取第二种格式的审批表格"""
+    try:
+        print("尝试等待第二种格式的表格加载...")
+        # 等待序号列的1出现
+        try:
+            page.locator('.el-table__body tbody tr:first-child td:first-child').get_by_text('1').wait_for(timeout=15000)
+            time.sleep(0.5)
+        except:
+            print("等待表格超时，尝试直接抓取...")
+
+        print("开始抓取第二种格式的审批表格数据...")
+        rows = page.locator('.el-table__body tbody .el-table__row')
+        row_count = rows.count()
+        print(f"找到 {row_count} 行审批记录")
+
+        if row_count == 0:
+            print("警告：没有找到任何审批记录！")
+            return []
+
+        approval_data = []
+
+        for i in range(row_count):
+            row = rows.nth(i)
+            cells = row.locator('.el-table__cell')
+
+            if cells.count() >= 6:
+                row_data = {
+                    '处理人': cells.nth(1).inner_text().strip(),
+                    '节点名称': '',  # 第二种格式没有节点名称
+                    '所在部门': cells.nth(2).inner_text().strip(),
+                    '处理意见': cells.nth(3).inner_text().strip(),
+                    '接收时间': cells.nth(4).inner_text().strip(),
+                    '审批时间': cells.nth(5).inner_text().strip()
+                }
+                approval_data.append(row_data)
+                print(f"  第{i + 1}条: {row_data['处理人']} - {row_data['所在部门']}")
+
+        return approval_data
+
+    except Exception as e:
+        print(f"抓取第二种格式审批表格失败: {e}")
         return []
 
 
@@ -106,13 +155,6 @@ def scrape_single_contract(page):
         #page.get_by_text("合同审批").click()
         close_popups(page)  # 关闭可能存在的弹窗
         page.locator('.tab-item span:has-text("合同审批")').click()
-
-
-        try:
-            page.locator('.lui-table-tbody tr').first.locator('td').get_by_text('1').wait_for(timeout=15000)
-        except Exception as e:
-            print(f"等待审批表格超时: {e}")
-            # 可以尝试刷新页面或重试
 
         # 抓取审批表格
         approval_data = scrape_approval_table(page)
