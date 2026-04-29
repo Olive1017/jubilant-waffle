@@ -5,31 +5,28 @@ from datetime import datetime
 def close_popups(page):
     """关闭所有系统弹窗(如502错误等)"""
     try:
-        # 尝试多种方式定位关闭按钮
-        popup = page.locator('.el-overlay-message-box')
-        if popup.count() > 0:
-            print("检测到系统弹窗，正在关闭...")
-            # 尝试方式1
-            close_btn = page.locator('.el-message-box__headerbtn')
-            if close_btn.count() > 0:
-                close_btn.click()
-                time.sleep(0.5)
-                print("弹窗已关闭")
-                return True
-            # 尝试方式2
-            close_btn = page.locator('button[aria-label="关闭此对话框"]')
-            if close_btn.count() > 0:
-                close_btn.click()
-                time.sleep(0.5)
-                print("弹窗已关闭")
-                return True
-            # 尝试方式3
-            close_icon = page.locator('.el-message-box__close')
-            if close_icon.count() > 0:
-                close_icon.click()
-                time.sleep(0.5)
-                print("弹窗已关闭")
-                return True
+        # 获取所有弹窗
+        popups = page.locator('.el-overlay-message-box')
+        popup_count = popups.count()
+
+        if popup_count > 0:
+            print(f"检测到 {popup_count} 个系统弹窗，正在关闭...")
+
+            # 关闭所有弹窗
+            closed_count = 0
+            for i in range(popup_count):
+                try:
+                    close_btn = popups.nth(i).locator('.el-message-box__headerbtn').first
+                    if close_btn.count() > 0:
+                        close_btn.click()
+                        time.sleep(0.3)
+                        closed_count += 1
+                        print(f"第 {i+1} 个弹窗已关闭")
+                except Exception as e:
+                    print(f"关闭第 {i+1} 个弹窗时出错: {e}")
+
+            print(f"成功关闭 {closed_count}/{popup_count} 个弹窗")
+            return closed_count > 0
     except Exception as e:
         print(f"关闭弹窗时出错: {e}")
     return False

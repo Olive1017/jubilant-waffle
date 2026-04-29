@@ -38,7 +38,18 @@ class ScrapingThread(QThread):
             auth_file = auth_dir / "auth.json"
 
             with sync_playwright() as playwright:
-                browser = playwright.chromium.launch(channel="msedge", headless=False, slow_mo=1000)
+                # 尝试依次启动 Chrome 和 Edge
+                browser = None
+                try:
+                    browser = playwright.chromium.launch(channel="msedge", headless=False, slow_mo=1000)
+                    print("使用 Edge 浏览器")
+                except:
+                    try:
+                        browser = playwright.chromium.launch(channel="chrome", headless=False, slow_mo=1000)
+                        print("使用 Chrome 浏览器")
+                    except Exception as e:
+                        print(f"Chrome 和 Edge 都无法启动: {e}")
+                        raise
 
                 # 如果有保存的登录状态，尝试加载
                 if auth_file.exists():
@@ -201,8 +212,14 @@ class ScrapingThread(QThread):
                         print(f"当前页面有 {contract_count} 个合同，尝试翻页...")
                         try:
                             page.locator('.btn-next').click()
-                            time.sleep(8)
-                            page.wait_for_load_state('networkidle')
+                            time.sleep(2)  # 短暂等待点击生效
+
+                            # 等待表格数据出现
+                            try:
+                                page.locator("td.el-table_2_column_6.el-table__cell a.dao-link").first.wait_for(timeout=10000)
+                                print("翻页后表格已加载")
+                            except:
+                                print("等待表格超时，尝试继续...")
 
                             # 检查翻页是否成功
                             new_contract_links = page.locator("td.el-table_2_column_6.el-table__cell a.dao-link")
