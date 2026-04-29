@@ -241,7 +241,6 @@ class MainWindow(QMainWindow):
 
         # 创建并启动抓取线程
         self.scraping_thread = ScrapingThread()
-        self.scraping_thread.log_signal.connect(self.append_log)
         self.scraping_thread.need_continue.connect(lambda: self.continue_btn.setEnabled(True))
         self.scraping_thread.finished.connect(self.on_scraping_finished)
         self.scraping_thread.start()
@@ -334,6 +333,18 @@ class App(QApplication):
         super().__init__(argv)
         self.setApplicationName("合同管理系统")
 
+        # 重定向标准输出到UI日志
+        sys.stdout = self
+
         # 直接打开主窗口
         self.main_window = MainWindow()
         self.main_window.show()
+
+    def write(self, text):
+        """重写write方法，将输出发送到UI日志"""
+        if text.strip():  # 忽略空行
+            self.main_window.append_log(text.rstrip())
+
+    def flush(self):
+        """必须实现flush方法"""
+        pass

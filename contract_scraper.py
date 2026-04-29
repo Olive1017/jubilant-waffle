@@ -42,7 +42,7 @@ def scrape_approval_table(page):
         # 尝试等待第一种格式的容器
         try:
             page.wait_for_selector('.div-summary-of-opinions-main', timeout=15000)
-            time.sleep(1)
+            time.sleep(0.5)
         except:
             print("未找到第一种格式容器，可能是第二种格式，继续尝试...")
 
