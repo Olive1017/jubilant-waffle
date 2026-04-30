@@ -17,6 +17,7 @@ class MainWindow(QMainWindow):
         self.setWindowTitle("合同管理系统 - 自动化工具")
         self.setMinimumSize(900, 600)
         self.scraping_thread = None
+        self.excel_path = None  # 添加Excel路径属性
         self.init_ui()
         self.setup_style()
 
@@ -97,23 +98,6 @@ class MainWindow(QMainWindow):
         self.start_btn.clicked.connect(self.start_scraping)
         scrape_layout.addWidget(self.start_btn)
 
-        self.stop_btn = QPushButton("停止")
-        self.stop_btn.setFixedHeight(40)
-        self.stop_btn.setEnabled(False)
-        self.stop_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #ff4d4f;
-            }
-            QPushButton:hover {
-                background-color: #ff7875;
-            }
-            QPushButton:pressed {
-                background-color: #cf1322;
-            }
-        """)
-        self.stop_btn.clicked.connect(self.stop_scraping)
-        scrape_layout.addWidget(self.stop_btn)
-
         self.continue_btn = QPushButton("继续")
         self.continue_btn.setFixedHeight(40)
         self.continue_btn.setEnabled(False)
@@ -140,7 +124,7 @@ class MainWindow(QMainWindow):
         data_group = QGroupBox("数据管理")
         data_layout = QVBoxLayout()
 
-        self.export_btn = QPushButton("导出Excel")
+        self.export_btn = QPushButton("选择保存路径")
         self.export_btn.setFixedHeight(40)
         self.export_btn.setStyleSheet("""
             QPushButton {
@@ -153,7 +137,7 @@ class MainWindow(QMainWindow):
                 background-color: #096dd9;
             }
         """)
-        self.export_btn.clicked.connect(self.export_excel)
+        self.export_btn.clicked.connect(self.select_excel_path)
         data_layout.addWidget(self.export_btn)
 
         data_group.setLayout(data_layout)
@@ -229,13 +213,17 @@ class MainWindow(QMainWindow):
 
     def start_scraping(self):
         """开始抓取"""
+        # 检查是否已选择Excel保存路径
+        if self.excel_path is None:
+            QMessageBox.warning(self, "提示", "请先点击【选择保存路径】按钮创建Excel文件")
+            return
+
         self.log_text.clear()
         self.log_text.append("=" * 60)
         self.log_text.append(f"开始时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         self.log_text.append("=" * 60)
 
         self.start_btn.setEnabled(False)
-        self.stop_btn.setEnabled(True)
         self.status_label.setText("运行中")
         self.status_label.setStyleSheet("color: #1890ff; font-weight: bold;")
 
@@ -244,20 +232,6 @@ class MainWindow(QMainWindow):
         self.scraping_thread.need_continue.connect(lambda: self.continue_btn.setEnabled(True))
         self.scraping_thread.finished.connect(self.on_scraping_finished)
         self.scraping_thread.start()
-
-    def stop_scraping(self):
-        """停止抓取"""
-        if self.scraping_thread and self.scraping_thread.isRunning():
-            reply = QMessageBox.question(
-                self,
-                "确认停止",
-                "确定要停止抓取吗？已抓取的数据可能会丢失。",
-                QMessageBox.Yes | QMessageBox.No
-            )
-            if reply == QMessageBox.Yes:
-                self.scraping_thread.stop()
-                self.stop_btn.setEnabled(False)
-                self.append_log("正在停止抓取...")
 
     def continue_scraping(self):
         """继续抓取"""
@@ -269,8 +243,20 @@ class MainWindow(QMainWindow):
     def on_scraping_finished(self, success, message):
         """抓取完成回调"""
         self.start_btn.setEnabled(True)
-        self.stop_btn.setEnabled(False)
         self.continue_btn.setEnabled(False)
+
+        # 保存并关闭Excel文件
+        try:
+            from data_handler import save_and_close
+            save_and_close()
+            print("Excel文件已保存并关闭")
+        except Exception as e:
+            print(f"保存Excel文件时出错: {e}")
+
+        # 重置保存路径按钮
+        self.excel_path = None
+        self.export_btn.setEnabled(True)
+        self.export_btn.setText("选择保存路径")
 
         if success:
             self.status_label.setText("完成")
@@ -294,21 +280,13 @@ class MainWindow(QMainWindow):
         """关闭事件"""
         event.accept()
 
-    def export_excel(self):
-        """导出Excel文件"""
+    def select_excel_path(self):
+        """选择Excel保存路径并初始化文件"""
         try:
-            from data_handler import get_contract_data, export_to_excel
-
-            # 检查是否有数据
-            contract_data = get_contract_data()
-            if not contract_data:
-                QMessageBox.warning(self, "警告", "没有可导出的数据，请先运行抓取")
-                return
-
             # 打开文件保存对话框
             file_path, _ = QFileDialog.getSaveFileName(
                 self,
-                "保存Excel文件",
+                "选择Excel保存路径",
                 "",
                 "Excel文件 (*.xlsx);;所有文件 (*)"
             )
@@ -318,12 +296,16 @@ class MainWindow(QMainWindow):
                 if not file_path.endswith('.xlsx'):
                     file_path += '.xlsx'
 
-                # 导出数据到指定路径
-                record_count = export_to_excel(file_path)
+                # 初始化Excel文件
+                from data_handler import init_excel_file
+                init_excel_file(file_path)
 
-                QMessageBox.information(self, "成功", f"已导出 {record_count} 个合同的数据到:\n{file_path}")
+                self.excel_path = file_path  # 保存路径
+                self.export_btn.setEnabled(False)  # 禁用按钮
+                self.export_btn.setText(f"已选择: {Path(file_path).name}")
+                QMessageBox.information(self, "成功", f"Excel文件已创建，抓取时将实时写入数据到:\n{file_path}")
         except Exception as e:
-            QMessageBox.critical(self, "错误", f"导出失败: {str(e)}")
+            QMessageBox.critical(self, "错误", f"创建文件失败: {str(e)}")
 
 
 class App(QApplication):

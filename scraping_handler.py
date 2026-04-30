@@ -1,3 +1,4 @@
+import sys
 import json
 import time
 import tempfile
@@ -16,19 +17,10 @@ class ScrapingThread(QThread):
     finished = Signal(bool, str)  # (是否成功, 消息)
     need_continue = Signal()  # 需要用户继续
 
-    def __init__(self):
-        super().__init__()
-        self.is_running = True
-
-    def stop(self):
-        """停止抓取"""
-        self.is_running = False
-
     def run(self):
         """执行抓取流程"""
         try:
             from contract_scraper import scrape_single_contract
-
 
             print("正在启动浏览器...")
 
@@ -108,18 +100,10 @@ class ScrapingThread(QThread):
 
                 # 等待用户完成所有操作后点击继续
                 while not self.should_continue:
-                    if not self.is_running:
-                        print("用户停止了抓取")
-                        context.close()
-                        browser.close()
-                        return
                     time.sleep(0.1)
 
 
                 print("操作确认完成，正在保存登录状态...")
-                from data_handler import clear_contract_data
-                clear_contract_data()
-                print("旧数据已清空，开始新的抓取...")
 
                 # 保存登录状态
                 context.storage_state(path=str(auth_file))
@@ -150,7 +134,7 @@ class ScrapingThread(QThread):
                 page_number = 1
                 total_contracts = 0
 
-                while self.is_running:
+                while True:
                     print(f"\n===== 当前第 {page_number} 页 =====")
 
                     # 获取当前页面的所有合同链接
@@ -165,10 +149,6 @@ class ScrapingThread(QThread):
 
                     # 遍历当前页面的所有合同
                     for i in range(contract_count):
-                        if not self.is_running:
-                            print("用户停止了抓取")
-                            break
-
                         print(f"\n----- 开始抓取第 {i + 1}/{contract_count} 个合同 -----")
 
                         # 点击合同链接
@@ -197,9 +177,6 @@ class ScrapingThread(QThread):
                         contract_links = page.locator("td.el-table_2_column_6.el-table__cell a.dao-link")
 
                         print(f"已抓取 {total_contracts} 个合同")
-
-                    if not self.is_running:
-                        break
 
                     # 当前页面的所有合同抓取完成，判断是否需要翻页
                     print(f"\n第 {page_number} 页的 {contract_count} 个合同已全部抓取完成")
