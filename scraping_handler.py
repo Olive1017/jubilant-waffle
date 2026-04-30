@@ -189,7 +189,7 @@ class ScrapingThread(QThread):
                         print(f"当前页面有 {contract_count} 个合同，尝试翻页...")
                         try:
                             page.locator('.btn-next').click()
-                            time.sleep(2)  # 短暂等待点击生效
+                            time.sleep(8)  # 等待翻页生效和页面完全加载
 
                             # 等待表格数据出现
                             try:
